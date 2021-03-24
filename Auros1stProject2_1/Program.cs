@@ -16,8 +16,8 @@ namespace Auros1stProject2_1
         {
             //
             // "SiO2 1000nm_on_Si.dat" 파일 로딩 후
-            // 측정 스펙트럼 데이터를 alpha, beta 로 변환.
-            // 
+            // 측정 스펙트럼 데이터를 alpha, beta 로 변환,
+            // "SiO2 1000nm_on_Si_new.dat" 파일로 저장한다.
             //
             // 2021.03.24 이지원.
             //
@@ -314,14 +314,13 @@ namespace Auros1stProject2_1
                 //Complex PhaseThickness = new Complex(CosPhaseThickness2);
 
                 // 총 반사계수를 구한다.
-                Complex E = new Complex(Math.E, 0);
-                Complex complex_exp = Complex.Pow(E, -PhaseThickness2);
+                Complex E = new Complex(Cos(PhaseThickness2.Real), -Sin(PhaseThickness2.Real));
 
-                Rp[i] = (r01p[i] + r12p[i] * complex_exp) /
-                        (1 + r01p[i] * r12p[i] * complex_exp);
+                Rp[i] = (r01p[i] + r12p[i] * E) /
+                        (1 + r01p[i] * r12p[i] * E);
 
-                Rs[i] = (r01s[i] + r12s[i] * complex_exp) /
-                        (1 + r01s[i] * r12s[i] * complex_exp);
+                Rs[i] = (r01s[i] + r12s[i] * E) /
+                        (1 + r01s[i] * r12s[i] * E);
             }
 
             #region 총 반사계수 출력 (Test)
