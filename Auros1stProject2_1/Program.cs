@@ -42,9 +42,9 @@ namespace Auros1stProject2_1
 
             // wavelength : 350 ~ 980(nm)인 측정 스펙트럼 데이터를 담을 리스트 선언.
             List<double> wavelength_exp = new List<double>();   // 파장 데이터 리스트.
-            List<double> AOI_exp = new List<double>();          // 입사각 데이터 리스트.
-            List<double> alpha_exp = new List<double>();    // Psi 데이터 리스트.
-            List<double> beta_exp = new List<double>();   // Delta 데이터 리스트.
+            List<double> AOI_exp        = new List<double>();   // 입사각 데이터 리스트.
+            List<double> alpha_exp      = new List<double>();   // Psi 데이터 리스트.
+            List<double> beta_exp       = new List<double>();   // Delta 데이터 리스트.
 
             // 데이터의 첫번째 줄은 column 명이다.
             // 이를 제외하기 위해 반복문을 1부터 시작한다.
@@ -96,20 +96,19 @@ namespace Auros1stProject2_1
             {
                 // 컬럼 명 쓰기.
                 NewSpectrumOutputFile.WriteLine(
-                    "wavelength(nm)" + "\t"
-                    + "AOI" + "\t"
-                    + "alpha" + "\t"
-                    + "beta");    // 컬럼명 쓰기.
-                // WriteLine(Columns);
+                    "wavelength(nm)"    + "\t"
+                    + "AOI"             + "\t"
+                    + "alpha"           + "\t"
+                    + "beta");
 
                 // 스펙트럼 데이터 쓰기.
                 for (int i = 0; i < LenData; i++)
                 {
                     // tsv 데이터 형식으로 데이터를 쓴다.
                     NewSpectrumOutputFile.WriteLine(
-                        wavelength_exp[i] + "\t"
-                        + AOI_exp[i] + "\t"
-                        + alpha_exp[i] + "\t"
+                        wavelength_exp[i]   + "\t"
+                        + AOI_exp[i]        + "\t"
+                        + alpha_exp[i]      + "\t"
                         + beta_exp[i]);
                 }
             }
@@ -128,9 +127,9 @@ namespace Auros1stProject2_1
             // 데이터의 첫번째 줄은 column 명이다.
             // 이를 제외하고 데이터를 받기 위해 LenData 변수를 선언한다.
             LenData = Si_new.Length - 1;
-            double[] wavelength_Si = new double[LenData];
-            double[] n_Si = new double[LenData];
-            double[] k_Si = new double[LenData];
+            double[] wavelength_Si  = new double[LenData];
+            double[] n_Si           = new double[LenData];
+            double[] k_Si           = new double[LenData];
 
             // Si_new 에 받은 데이터를 각 컬럼별로 저장한다.
             LenData = Si_new.Length;
@@ -140,9 +139,9 @@ namespace Auros1stProject2_1
                 SingleLineData = Si_new[i].Split((char)0x09);  // 0x09 : 수평 탭.
 
                 // 각 컬럼에 해당하는 데이터를 저장한다.
-                wavelength_Si[i - 1] = Double.Parse(SingleLineData[0]);
-                n_Si[i - 1] = Double.Parse(SingleLineData[1]);
-                k_Si[i - 1] = Double.Parse(SingleLineData[2]);
+                wavelength_Si[i - 1]    = Double.Parse(SingleLineData[0]);
+                n_Si[i - 1]             = Double.Parse(SingleLineData[1]);
+                k_Si[i - 1]             = Double.Parse(SingleLineData[2]);
             }
 
 
@@ -152,9 +151,9 @@ namespace Auros1stProject2_1
             // 데이터의 첫번째 줄은 column 명이다.
             // 이를 제외하고 데이터를 받기 위해 LenData 변수를 선언한다.
             LenData = SiO2_new.Length - 1;
-            double[] wavelength_SiO2 = new double[LenData];
-            double[] n_SiO2 = new double[LenData];
-            double[] k_SiO2 = new double[LenData];
+            double[] wavelength_SiO2    = new double[LenData];
+            double[] n_SiO2             = new double[LenData];
+            double[] k_SiO2             = new double[LenData];
 
             // SiO2_new 에 받은 데이터를 각 컬럼별로 저장한다.
             LenData = SiO2_new.Length;
@@ -164,9 +163,9 @@ namespace Auros1stProject2_1
                 SingleLineData = SiO2_new[i].Split((char)0x09);  // 0x09 : 수평 탭.
 
                 // 각 컬럼에 해당하는 데이터를 저장한다.
-                wavelength_SiO2[i - 1] = Double.Parse(SingleLineData[0]);
-                n_SiO2[i - 1] = Double.Parse(SingleLineData[1]);
-                k_SiO2[i - 1] = Double.Parse(SingleLineData[2]);
+                wavelength_SiO2[i - 1]  = Double.Parse(SingleLineData[0]);
+                n_SiO2[i - 1]           = Double.Parse(SingleLineData[1]);
+                k_SiO2[i - 1]           = Double.Parse(SingleLineData[2]);
             }
 
             #region Si_new, SiO2_new 데이터 출력 (Test)
@@ -202,23 +201,23 @@ namespace Auros1stProject2_1
                       t01p = new Complex[LenData],
                       t01s = new Complex[LenData];
 
-            double AOI_air = degree2radian(65.0);   // 입사각. (라디안) 
-            Complex N_air = new Complex(1, 0);    // 공기의 굴절률.
+            double AOI_air  = degree2radian(65.0);  // 입사각. (라디안) 
+            Complex N_air   = new Complex(1, 0);    // 공기의 굴절률.
 
             // 반사, 투과계수를 계산한다.
             for (int i = 0; i < LenData; i++)
             {
                 // 파장에 대한 물질의 복소굴절률을 구한다.
-                Complex N_SiO2 = new Complex(n_SiO2[i], -k_SiO2[i]);
-                Complex N_Si = new Complex(n_Si[i], -k_Si[i]);
+                Complex N_SiO2  = new Complex(n_SiO2[i], -k_SiO2[i]);
+                Complex N_Si    = new Complex(n_Si[i], -k_Si[i]);
 
                 // air, SiO2 경계면에서의 굴절각을 구한다. (스넬의 법칙)
-                Complex Sintheta_j = new Complex(Sin((double)AOI_air), 0);
-                Complex Costheta_j = new Complex(Cos((double)AOI_air), 0);
-                Complex Sintheta_k = (N_air / N_SiO2) * Sintheta_j;
-                Complex theta_k = Complex.Asin(Sintheta_k);
+                Complex Sintheta_j  = new Complex(Sin((double)AOI_air), 0);
+                Complex Costheta_j  = new Complex(Cos((double)AOI_air), 0);
+                Complex Sintheta_k  = (N_air / N_SiO2) * Sintheta_j;
+                Complex theta_k     = Complex.Asin(Sintheta_k);
                 // air, SiO2 경계면에서의 굴절각.
-                Complex Costheta_k = Complex.Cos(theta_k);
+                Complex Costheta_k  = Complex.Cos(theta_k);
 
                 // air, SiO2 경계면에서의 반사계수를 구한다.
                 r01p[i] = ((N_SiO2 * Costheta_j) - (N_air * Costheta_k)) /
@@ -235,11 +234,11 @@ namespace Auros1stProject2_1
                                ((N_air * Costheta_j) + (N_SiO2 * Costheta_k));
 
                 // SiO2, Si 경계면에서의 굴절각을 구한다. (스넬의 법칙)
-                Sintheta_j = Complex.Sin(theta_k);
-                Costheta_j = Complex.Cos(theta_k);
-                Sintheta_k = (N_SiO2 / N_Si) * Sintheta_j;
-                theta_k = Complex.Asin(Sintheta_k);
-                Costheta_k = Complex.Cos(theta_k);
+                Sintheta_j  = Complex.Sin(theta_k);
+                Costheta_j  = Complex.Cos(theta_k);
+                Sintheta_k  = (N_SiO2 / N_Si) * Sintheta_j;
+                theta_k     = Complex.Asin(Sintheta_k);
+                Costheta_k  = Complex.Cos(theta_k);
 
                 // SiO2, Si 경계면에서의 반사계수를 구한다.
                 r12p[i] = ((N_Si * Costheta_j) - (N_SiO2 * Costheta_k)) /
@@ -297,24 +296,22 @@ namespace Auros1stProject2_1
                 Complex N_SiO2 = new Complex(n_SiO2[i], -k_SiO2[i]);
 
                 // air, SiO2 경계면에서의 굴절각을 구한다. (스넬의 법칙)
-                Complex Sintheta_j = new Complex(Sin((double)AOI_air), 0);
-                Complex Costheta_j = new Complex(Cos((double)AOI_air), 0);
-                Complex Sintheta_k = (N_air / N_SiO2) * Sintheta_j;
-                Complex theta_k = Complex.Asin(Sintheta_k);
+                Complex Sintheta_j  = new Complex(Sin((double)AOI_air), 0);
+                Complex Costheta_j  = new Complex(Cos((double)AOI_air), 0);
+                Complex Sintheta_k  = (N_air / N_SiO2) * Sintheta_j;
+                Complex theta_k     = Complex.Asin(Sintheta_k);
                 // air, SiO2 경계면에서의 굴절각.
-                Complex Costheta_k = Complex.Cos(theta_k);
+                Complex Costheta_k  = Complex.Cos(theta_k);
 
-                // 위상 두께를 구하기.
-                Complex PhaseThickness2 = (1000 * Math.PI * 2) * N_SiO2 * Costheta_k * (2) /
+                // 위상 두께를 구한다.
+                Complex PhaseThickness = (1000 * Math.PI * 2) * N_SiO2 * Costheta_k /
                                           wavelength_SiO2[i];
-
-
-                Complex CosPhaseThickness2 = Complex.Cos(PhaseThickness2);
-                Complex SinPhaseThickness2 = Complex.Sin(PhaseThickness2);
-                //Complex PhaseThickness = new Complex(CosPhaseThickness2);
+                //WriteLine(PhaseThickness);
 
                 // 총 반사계수를 구한다.
-                Complex E = new Complex(Cos(PhaseThickness2.Real), -Sin(PhaseThickness2.Real));
+
+                //Complex E = new Complex(Cos(PhaseThickness2.Real), -Sin(PhaseThickness2.Real));
+                Complex E = Complex.Exp(-PhaseThickness * 2);
 
                 Rp[i] = (r01p[i] + r12p[i] * E) /
                         (1 + r01p[i] * r12p[i] * E);
