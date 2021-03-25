@@ -14,6 +14,7 @@ namespace Auros1stProject2_1
     {
         static void Main(string[] args)
         {
+            
             //
             // "SiO2 1000nm_on_Si.dat" 파일 로딩 후
             // 측정 스펙트럼 데이터를 alpha, beta 로 변환,
@@ -26,7 +27,7 @@ namespace Auros1stProject2_1
             List<string> MeasurementSpectrumData = new List<string>();  // 측정 스펙트럼 데이터 저장할 배열. (한 줄씩 저장)
             string[] SingleLineData;                                    // 한 줄의 스펙트럼 데이터를 임시로 저장할 배열.
 
-            // "SiO2 2nm_on_Si.dat" 파일 읽기. (한 줄씩)
+            // "SiO2 1000nm_on_Si.dat" 파일 읽기. (한 줄씩)
             MeasurementSpectrumData.AddRange(File.ReadAllLines("SiO2 1000nm_on_Si.dat"));
 
             // 무의미한 공백 행을 제거한다.
@@ -79,7 +80,7 @@ namespace Auros1stProject2_1
             for (int i = 0; i < LenData; i++)
             {
                 // psi, delta 값을 radian 으로 변환한다.
-                double PsiRadian = degree2radian(alpha_exp[i]);
+                double PsiRadian = degree2radian(alpha_exp[i]); // ?
                 double DeltaRadian = degree2radian(beta_exp[i]);
 
                 // psi, delta 데이터를 alpha, beta 로 갱신한다.
@@ -87,9 +88,10 @@ namespace Auros1stProject2_1
                     (Pow(Tan(PsiRadian), 2.0) - Pow(Tan(PolarizerRadian), 2.0))
                     / (Pow(Tan(PsiRadian), 2.0) + Pow(Tan(PolarizerRadian), 2.0)));
                 beta_exp[i] = (
-                    (2 * Tan(PsiRadian) * Tan(PolarizerRadian) * Cos(DeltaRadian))
+                    (2.0 * Tan(PsiRadian) * Tan(PolarizerRadian) * Cos(DeltaRadian))
                     / (Pow(Tan(PsiRadian), 2.0) + Pow(Tan(PolarizerRadian), 2.0)));
             }
+            
 
             // 파일 쓰기.
             using (StreamWriter NewSpectrumOutputFile = new StreamWriter("SiO2 1000nm_on_Si_new.dat"))
@@ -180,28 +182,27 @@ namespace Auros1stProject2_1
 
             //
             // "Si_new.txt", "SiO2_new.txt" 의 n, k 를 사용하여
-            // 각 계면에서의 반사, 투과계수를 계산한다.
+            // 파장에 따른 각 계면에서의 반사, 투과계수를 계산한다.
             //
             // 2021.03.24 이지원.
             //
             #region 각 계면에서의 반사, 투과계수 계산
 
-            // degree 를 radian 으로 변환해주는 함수.
-            // double degree2radian(double angle) => ((angle * (PI)) / 180);
             LenData = wavelength_Si.Length;
 
             // 반사계수를 담을 배열.
-            Complex[] r12p = new Complex[LenData],
-                      r12s = new Complex[LenData],
-                      r01p = new Complex[LenData],
-                      r01s = new Complex[LenData];
-            // 투과계수를 담을 배열.
-            Complex[] t12p = new Complex[LenData],
-                      t12s = new Complex[LenData],
-                      t01p = new Complex[LenData],
-                      t01s = new Complex[LenData];
+            Complex[] r01p = new Complex[LenData],
+                      r01s = new Complex[LenData],
+                      r12p = new Complex[LenData],
+                      r12s = new Complex[LenData];
 
-            double AOI_air  = degree2radian(65.0);  // 입사각. (라디안) 
+            // 투과계수를 담을 배열.
+            Complex[] t01p = new Complex[LenData],
+                      t01s = new Complex[LenData],
+                      t12p = new Complex[LenData],
+                      t12s = new Complex[LenData];
+
+            double AOI_air  = degree2radian(65.0);  // air, SiO2 경계면에서의 입사각. (라디안) 
             Complex N_air   = new Complex(1, 0);    // 공기의 굴절률.
 
             // 반사, 투과계수를 계산한다.
@@ -297,7 +298,6 @@ namespace Auros1stProject2_1
 
                 // air, SiO2 경계면에서의 굴절각을 구한다. (스넬의 법칙)
                 Complex Sintheta_j  = new Complex(Sin((double)AOI_air), 0);
-                Complex Costheta_j  = new Complex(Cos((double)AOI_air), 0);
                 Complex Sintheta_k  = (N_air / N_SiO2) * Sintheta_j;
                 Complex theta_k     = Complex.Asin(Sintheta_k);
                 // air, SiO2 경계면에서의 굴절각.
@@ -309,10 +309,9 @@ namespace Auros1stProject2_1
                 //WriteLine(PhaseThickness);
 
                 // 총 반사계수를 구한다.
+                Complex E = Complex.Exp(PhaseThickness * new Complex(0, -2.0));
 
-                //Complex E = new Complex(Cos(PhaseThickness2.Real), -Sin(PhaseThickness2.Real));
-                Complex E = Complex.Exp(-PhaseThickness * 2);
-
+                // 무한등비급수 공식 1.
                 Rp[i] = (r01p[i] + r12p[i] * E) /
                         (1 + r01p[i] * r12p[i] * E);
 
@@ -323,7 +322,8 @@ namespace Auros1stProject2_1
             #region 총 반사계수 출력 (Test)
 
             /*for (int i = 0; i < LenData; i++)
-                WriteLine(Rp[i] + "\t" + Rs[i]);*/
+                //WriteLine(Pow(Rp[i].Magnitude, 2));
+                WriteLine(Pow(Rs[i].Magnitude, 2));*/
 
             #endregion
 
@@ -349,14 +349,21 @@ namespace Auros1stProject2_1
                 Complex rho = Rp[i] / Rs[i];
 
                 // Psi, Delta.
-                double Psi = Atan(rho.Magnitude);
-                double Delta = rho.Phase;
+                double Psi      = Atan(rho.Magnitude);
+                double Delta    = rho.Phase;
+                
+                // double Radian2Degree(double angle) => (angle * (180.0 / PI));
+                // WriteLine(Radian2Degree(Psi));
+                // WriteLine(Radian2Degree(Delta));
 
                 alpha_cal[i] = (Pow(Tan(Psi), 2) - Pow(Tan(polarizerAngle), 2)) /
-                                       (Pow(Tan(Psi), 2) + Pow(Tan(polarizerAngle), 2));
+                               (Pow(Tan(Psi), 2) + Pow(Tan(polarizerAngle), 2));
 
                 beta_cal[i]  = (2 * Tan(Psi) * Cos(Delta) * Tan(polarizerAngle)) /
-                                       (Pow(Tan(Psi), 2) + Pow(Tan(polarizerAngle), 2));
+                               (Pow(Tan(Psi), 2) + Pow(Tan(polarizerAngle), 2));
+
+                // WriteLine(alpha_cal[i]);
+                // WriteLine(beta_cal[i]);
             }
 
             #region alpha, beta 이론값 출력 (Test)
@@ -384,6 +391,7 @@ namespace Auros1stProject2_1
                     Pow((alpha_exp[i] - alpha_cal[i]), 2) + 
                     Pow((beta_exp[i] - beta_cal[i]), 2);
                 sum += difference_MSE;
+                //WriteLine(difference_MSE);
             }
 
             double MSE = sum / LenData;
