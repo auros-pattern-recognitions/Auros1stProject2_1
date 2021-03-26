@@ -281,15 +281,24 @@ namespace Auros1stProject2_1
 
             //
             // 위상 두께를 구하고 위에서 구한 반사계수를 통해
-            // 무한등비급수 수렴식을 계산한다. => 총 반사계수를 구한다.
+            // 1. 등비급수의 "항의 개수" 에 따른 반사계수를 구한다.
+            // 2. 무한등비급수 수렴식을 계산한다. => 총 반사계수를 구한다.
             //
-            // 2021.03.24 이지원. 
+            // 2021.03.24 이지원.
             //
             #region 무한등비급수 수렴식 계산
 
             // 총 반사계수를 저장할 배열 선언.
-            Complex[] Rp = new Complex[LenData],
-                      Rs = new Complex[LenData];
+            Complex[] Rp          = new Complex[LenData],                                       // Drude 공식 사용.
+                      Rs          = new Complex[LenData],
+                      Rp_2        = Enumerable.Repeat<Complex>(0, LenData).ToArray<Complex>(),  // 항의 개수 2 개.
+                      Rs_2        = Enumerable.Repeat<Complex>(0, LenData).ToArray<Complex>(),
+                      Rp_3        = Enumerable.Repeat<Complex>(0, LenData).ToArray<Complex>(),  // 항의 개수 3 개.
+                      Rs_3        = Enumerable.Repeat<Complex>(0, LenData).ToArray<Complex>(),
+                      Rp_4        = Enumerable.Repeat<Complex>(0, LenData).ToArray<Complex>(),  // 항의 개수 4 개.
+                      Rs_4        = Enumerable.Repeat<Complex>(0, LenData).ToArray<Complex>(),
+                      Rp_infinity = Enumerable.Repeat<Complex>(0, LenData).ToArray<Complex>(),  // 항의 개수 무한대.
+                      Rs_infinity = Enumerable.Repeat<Complex>(0, LenData).ToArray<Complex>();
 
             for (int i = 0; i < LenData; i++)
             {
@@ -299,8 +308,7 @@ namespace Auros1stProject2_1
                 // air, SiO2 경계면에서의 굴절각을 구한다. (스넬의 법칙)
                 Complex Sintheta_j  = new Complex(Sin((double)AOI_air), 0);
                 Complex Sintheta_k  = (N_air / N_SiO2) * Sintheta_j;
-                Complex theta_k     = Complex.Asin(Sintheta_k);
-                // air, SiO2 경계면에서의 굴절각.
+                Complex theta_k     = Complex.Asin(Sintheta_k);             // air, SiO2 경계면에서의 굴절각.
                 Complex Costheta_k  = Complex.Cos(theta_k);
 
                 // 위상 두께를 구한다.
@@ -311,12 +319,34 @@ namespace Auros1stProject2_1
                 // 총 반사계수를 구한다.
                 Complex E = Complex.Exp(PhaseThickness * new Complex(0, -2.0));
 
-                // 무한등비급수 공식 1.
                 Rp[i] = (r01p[i] + r12p[i] * E) /
                         (1 + r01p[i] * r12p[i] * E);
 
                 Rs[i] = (r01s[i] + r12s[i] * E) /
                         (1 + r01s[i] * r12s[i] * E);
+
+                // 등비급수의 "항의 개수"에 따른 alpha, beta 스펙트럼을 계산한다.
+                Complex a_p = r01p[i] + r12p[i] * E;
+                Complex a_s = r01s[i] + r12s[i] * E;
+                Complex r_p = -r01p[i] * r12p[i] * E;
+                Complex r_s = -r01s[i] * r12s[i] * E;
+
+                // 1. 항의 개수 : 2 개.
+                Rp_2[i] = a_p * (1.0 - Complex.Pow(r_p, 2)) / (1.0 - r_p);
+                Rs_2[i] = a_s * (1.0 - Complex.Pow(r_s, 2)) / (1.0 - r_s);
+
+                // 2. 항의 개수 : 3 개.
+                Rp_3[i] = a_p * (1.0 - Complex.Pow(r_p, 3)) / (1.0 - r_p);
+                Rs_3[i] = a_s * (1.0 - Complex.Pow(r_s, 3)) / (1.0 - r_s);
+
+                // 2. 항의 개수 : 4 개.
+                Rp_4[i] = a_p * (1.0 - Complex.Pow(r_p, 4)) / (1.0 - r_p);
+                Rs_4[i] = a_s * (1.0 - Complex.Pow(r_s, 4)) / (1.0 - r_s);
+
+                // 2. 항의 개수 : 무한대. => a / 1 - r
+                Rp_infinity[i] = a_p / (1 - r_p);
+                Rs_infinity[i] = a_s / (1 - r_s);
+
             }
 
             #region 총 반사계수 출력 (Test)
@@ -337,8 +367,16 @@ namespace Auros1stProject2_1
             #region 총 반사계수로부터 alpha, beta 도출.
 
             // alpha, beta 이론값을 담을 배열 선언.
-            double[] alpha_cal  = new double[LenData],
-                     beta_cal   = new double[LenData];
+            double[] alpha_cal      = new double[LenData],  // Drude 공식 사용.
+                     beta_cal       = new double[LenData],
+                     alpha_2        = new double[LenData],  // 항의 개수가 2개일 때.
+                     beta_2         = new double[LenData],
+                     alpha_3        = new double[LenData],  // 항의 개수가 3개이 때.
+                     beta_3         = new double[LenData],
+                     alpha_4        = new double[LenData],  // 항의 개수가 4개일 때.
+                     beta_4         = new double[LenData],
+                     alpha_infinity = new double[LenData],  // 항의 개수가 무한대일 때.
+                     beta_infinity  = new double[LenData];
 
             // Polarizer 오프셋 각.
             double polarizerAngle = degree2radian(45.0);
@@ -346,24 +384,65 @@ namespace Auros1stProject2_1
             for (int i = 0; i < LenData; i++)
             {
                 // 총 반사계수비. (복소반사계수비)
-                Complex rho = Rp[i] / Rs[i];
+                Complex rho          = Rp[i] / Rs[i];
+                Complex rho_2        = Rp_2[i] / Rs_2[i];
+                Complex rho_3        = Rp_3[i] / Rs_3[i];
+                Complex rho_4        = Rp_4[i] / Rs_4[i];
+                Complex rho_infinity = Rp_infinity[i] / Rs_infinity[i];
 
                 // Psi, Delta.
-                double Psi      = Atan(rho.Magnitude);
-                double Delta    = rho.Phase;
+                double Psi            = Atan(rho.Magnitude);
+                double Delta          = rho.Phase;
+
+                double Psi_2          = Atan(rho_2.Magnitude);
+                double Delta_2        = rho_2.Phase;
+
+                double Psi_3          = Atan(rho_3.Magnitude);
+                double Delta_3        = rho_3.Phase;
+
+                double Psi_4          = Atan(rho_4.Magnitude);
+                double Delta_4        = rho_4.Phase;
                 
+                double Psi_infinity   = Atan(rho_infinity.Magnitude);
+                double Delta_infinity = rho_infinity.Phase;
+
                 // double Radian2Degree(double angle) => (angle * (180.0 / PI));
                 // WriteLine(Radian2Degree(Psi));
                 // WriteLine(Radian2Degree(Delta));
 
-                alpha_cal[i] = (Pow(Tan(Psi), 2) - Pow(Tan(polarizerAngle), 2)) /
-                               (Pow(Tan(Psi), 2) + Pow(Tan(polarizerAngle), 2));
+                alpha_cal[i]    = (Pow(Tan(Psi), 2) - Pow(Tan(polarizerAngle), 2)) /
+                                  (Pow(Tan(Psi), 2) + Pow(Tan(polarizerAngle), 2));
 
-                beta_cal[i]  = (2 * Tan(Psi) * Cos(Delta) * Tan(polarizerAngle)) /
-                               (Pow(Tan(Psi), 2) + Pow(Tan(polarizerAngle), 2));
+                beta_cal[i]     = (2 * Tan(Psi) * Cos(Delta) * Tan(polarizerAngle)) /
+                                  (Pow(Tan(Psi), 2) + Pow(Tan(polarizerAngle), 2));
+
+                alpha_2[i]      = (Pow(Tan(Psi_2), 2) - Pow(Tan(polarizerAngle), 2)) /
+                                  (Pow(Tan(Psi_2), 2) + Pow(Tan(polarizerAngle), 2));
+
+                beta_2[i]       = (2 * Tan(Psi_2) * Cos(Delta_2) * Tan(polarizerAngle)) /
+                                  (Pow(Tan(Psi_2), 2) + Pow(Tan(polarizerAngle), 2));
+
+                alpha_3[i]      = (Pow(Tan(Psi_3), 2) - Pow(Tan(polarizerAngle), 2)) /
+                                  (Pow(Tan(Psi_3), 2) + Pow(Tan(polarizerAngle), 2));
+
+                beta_3[i]       = (2 * Tan(Psi_3) * Cos(Delta_3) * Tan(polarizerAngle)) /
+                                  (Pow(Tan(Psi_3), 2) + Pow(Tan(polarizerAngle), 2));
+
+                alpha_4[i]      = (Pow(Tan(Psi_4), 2) - Pow(Tan(polarizerAngle), 2)) /
+                                  (Pow(Tan(Psi_4), 2) + Pow(Tan(polarizerAngle), 2));
+
+                beta_4[i]       = (2 * Tan(Psi_4) * Cos(Delta_4) * Tan(polarizerAngle)) /
+                                  (Pow(Tan(Psi_4), 2) + Pow(Tan(polarizerAngle), 2));
+
+                alpha_infinity[i] = (Pow(Tan(Psi_infinity), 2) - Pow(Tan(polarizerAngle), 2)) /
+                                    (Pow(Tan(Psi_infinity), 2) + Pow(Tan(polarizerAngle), 2));
+
+                beta_infinity[i]  = (2 * Tan(Psi_infinity) * Cos(Delta_infinity) * Tan(polarizerAngle)) /
+                                    (Pow(Tan(Psi_infinity), 2) + Pow(Tan(polarizerAngle), 2));
 
                 // WriteLine(alpha_cal[i]);
                 // WriteLine(beta_cal[i]);
+
             }
 
             #region alpha, beta 이론값 출력 (Test)
@@ -371,6 +450,46 @@ namespace Auros1stProject2_1
             /*for (int i = 0; i < LenData; i++)
                 WriteLine(alpha_cal[i] + " " 
                 + beta_cal[i]);*/
+
+            #endregion
+
+            #region "등비급수의 항"의 개수에 따른 alpha, beta스펙트럼과 수렴식에 대한 alpha, beta 파일로 저장.
+
+            // 파일 쓰기.
+            using (StreamWriter NewSpectrumOutputFile = new StreamWriter("alpha_beta.dat"))
+            {
+                // 컬럼 명 쓰기.
+                NewSpectrumOutputFile.WriteLine(
+                    "wavelength_exp"    + "\t" +
+                        "alpha_cal"     + "\t" +
+                        "beta_cal"      + "\t" +
+                        "alpha_2"       + "\t" +
+                        "beta_2"        + "\t" +
+                        "alpha_3"       + "\t" +
+                        "beta_3"        + "\t" +
+                        "alpha_4"       + "\t" +
+                        "beta_4"        + "\t" +
+                        "alpha_infinity"+ "\t" +
+                        "beta_infinity");
+
+                // 스펙트럼 데이터 쓰기.
+                for (int i = 0; i < LenData; i++)
+                {
+                    // tsv 데이터 형식으로 데이터를 쓴다.
+                    NewSpectrumOutputFile.WriteLine(
+                        wavelength_exp[i] + "\t" +
+                        alpha_cal[i]    + "\t" +
+                        beta_cal[i]     + "\t" +
+                        alpha_2[i]      + "\t" +
+                        beta_2[i]       + "\t" +
+                        alpha_3[i]      + "\t" +
+                        beta_3[i]       + "\t" +
+                        alpha_4[i]      + "\t" +
+                        beta_4[i]       + "\t" +
+                        alpha_infinity[i] + "\t" +
+                        beta_infinity[i]);
+                }
+            }
 
             #endregion
 
@@ -383,19 +502,60 @@ namespace Auros1stProject2_1
             //
             #region 측정값과 이론값의 MSE 계산.
 
+            // 오차의 합.
+            double sum          = 0,    // Drude 공식 사용 시.
+                   sum_2        = 0,    // 항의 개수가 2개일 때.
+                   sum_3        = 0,    // 항의 개수가 3개일 때.
+                   sum_4        = 0,    // 항의 개수가 4개일 때.
+                   sum_infinity = 0;    // 항의 개수가 무한대일 때.
             double difference_MSE = 0;
-            double sum = 0;
+
             for (int i = 0; i < LenData; i++)
             {
+                // Drude 공식일 때 오차의 합.
                 difference_MSE = 
                     Pow((alpha_exp[i] - alpha_cal[i]), 2) + 
                     Pow((beta_exp[i] - beta_cal[i]), 2);
                 sum += difference_MSE;
+
+                // 항의 개수가 2개일 때 오차의 합.
+                difference_MSE =
+                    Pow((alpha_exp[i] - alpha_2[i]), 2) +
+                    Pow((beta_exp[i] - beta_2[i]), 2);
+                sum_2 += difference_MSE;
+
+                // 항의 개수가 3개일 때 오차의 합.
+                difference_MSE =
+                    Pow((alpha_exp[i] - alpha_3[i]), 2) +
+                    Pow((beta_exp[i] - beta_3[i]), 2);
+                sum_3 += difference_MSE;
+
+                // 항의 개수가 4개일 때 오차의 합.
+                difference_MSE =
+                    Pow((alpha_exp[i] - alpha_4[i]), 2) +
+                    Pow((beta_exp[i] - beta_4[i]), 2);
+                sum_4 += difference_MSE;
+
+                // 항의 개수가 무한대일 때 오차의 합.
+                difference_MSE =
+                    Pow((alpha_exp[i] - alpha_infinity[i]), 2) +
+                    Pow((beta_exp[i] - beta_infinity[i]), 2);
+                sum_infinity += difference_MSE;
                 //WriteLine(difference_MSE);
             }
 
             double MSE = sum / LenData;
+            double MSE_2 = sum_2 / LenData;
+            double MSE_3 = sum_3 / LenData;
+            double MSE_4 = sum_4 / LenData;
+            double MSE_infinity = sum_infinity / LenData;
+
+            // MSE 출력.
             WriteLine($"MSE : {MSE}");
+            WriteLine($"MSE_2 : {MSE_2}");
+            WriteLine($"MSE_3 : {MSE_3}");
+            WriteLine($"MSE_4 : {MSE_4}");
+            WriteLine($"MSE_infinity : {MSE_infinity}");
             #endregion
         }
     }
